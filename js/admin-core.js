@@ -1,4 +1,4 @@
-import { signIn, signOut, getCurrentUser, getCurrentProfile, supabase } from './supabase.js';
+import { signIn, signOut, getCurrentUser, getCurrentProfile, supabase, createProject } from './supabase.js';
 
 let adminUser = null;
 let adminProfile = null;
@@ -339,18 +339,13 @@ window.saveClientPortal = async function(e) {
   const title = document.getElementById('cp-title').value;
 
   try {
-    const { error } = await supabase.from('projects').insert({
+    const projectData = {
       code,
       client_name,
       title,
-      overall_progress: 0,
-      phases: [
-        { name: 'Foundation', progress: 0, status: 'pending' },
-        { name: 'Super Structure', progress: 0, status: 'pending' },
-        { name: 'Finishing', progress: 0, status: 'pending' }
-      ]
-    });
-    if (error) throw error;
+      overall_progress: 0
+    };
+    await createProject(projectData);
     closeGenericModals();
     loadConstructionClients();
     alert(`Portal Created! Client can now log in using ${code}@rjshomes.in`);

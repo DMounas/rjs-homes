@@ -806,8 +806,8 @@ async function signInWithProvider(provider) {
     });
     if (error) throw error;
   } catch (err) {
-    shopToast('❌', 'Failed to initialize ' + provider + ' sign-in');
     console.error(err);
+    alert(`Backend Setup Required: To use ${provider} sign in, you must enable it in your Supabase Dashboard -> Authentication -> Providers section. Once enabled with your Client IDs, this button will work automatically.`);
   }
 }
 

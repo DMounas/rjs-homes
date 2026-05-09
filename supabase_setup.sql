@@ -57,6 +57,9 @@ CREATE TABLE IF NOT EXISTS projects (
 -- In case projects table existed without client_name or title:
 DO $$ 
 BEGIN 
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='projects' AND column_name='code') THEN 
+    ALTER TABLE projects ADD COLUMN code TEXT UNIQUE; 
+  END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='projects' AND column_name='client_name') THEN 
     ALTER TABLE projects ADD COLUMN client_name TEXT DEFAULT ''; 
   END IF;
@@ -65,6 +68,9 @@ BEGIN
   END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='projects' AND column_name='overall_progress') THEN 
     ALTER TABLE projects ADD COLUMN overall_progress INTEGER DEFAULT 0; 
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='projects' AND column_name='client_id') THEN 
+    ALTER TABLE projects ADD COLUMN client_id UUID REFERENCES profiles(id); 
   END IF;
 END $$;
 

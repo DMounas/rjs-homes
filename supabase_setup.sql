@@ -116,19 +116,76 @@ CREATE POLICY "Admins manage products" ON products FOR ALL USING (EXISTS (SELECT
 -- 6. ORDERS (Shop)
 CREATE TABLE IF NOT EXISTS orders (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID REFERENCES profiles(id),
+    customer_id UUID REFERENCES profiles(id),
+    order_code TEXT,
     total_amount INTEGER NOT NULL,
     status TEXT DEFAULT 'Confirmed',
     payment_id TEXT,
     delivery_details JSONB,
-    items JSONB NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+DO $$ 
+BEGIN 
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='customer_id') THEN 
+    ALTER TABLE orders ADD COLUMN customer_id UUID REFERENCES profiles(id); 
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='order_code') THEN 
+    ALTER TABLE orders ADD COLUMN order_code TEXT; 
+  END IF;
+END $$;
+
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Admins manage orders" ON orders;
 CREATE POLICY "Admins manage orders" ON orders FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role = 'admin'));
 DROP POLICY IF EXISTS "Users manage own orders" ON orders;
-CREATE POLICY "Users manage own orders" ON orders FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users manage own orders" ON orders FOR ALL USING (auth.uid() = customer_id);
+
+-- 6.5 ORDER ITEMS (Shop)
+CREATE TABLE IF NOT EXISTS order_items (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    order_id UUID REFERENCES orders(id) ON DELETE CASCADE,
+    product_id UUID REFERENCES products(id),
+    product_name TEXT NOT NULL,
+    product_price INTEGER NOT NULL,
+    quantity INTEGER NOT NULL,
+    subtotal INTEGER NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Admins manage order items" ON order_items;
+CREATE POLICY "Admins manage order items" ON order_items FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role = 'admin'));
+DROP POLICY IF EXISTS "Users manage own order items" ON order_items;
+CREATE POLICY "Users manage own order items" ON order_items FOR SELECT USING (EXISTS (SELECT 1 FROM orders WHERE orders.id = order_items.order_id AND orders.customer_id = auth.uid()));
+
+-- 6.6 NOTIFICATIONS
+CREATE TABLE IF NOT EXISTS notifications (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    type TEXT,
+    is_read BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users view own notifications" ON notifications;
+CREATE POLICY "Users view own notifications" ON notifications FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "System can insert notifications" ON notifications;
+CREATE POLICY "System can insert notifications" ON notifications FOR INSERT WITH CHECK (true); -- Usually handled by triggers, but open for client-side insert if needed.
+
+-- 6.7 RPC: DECREMENT STOCK
+CREATE OR REPLACE FUNCTION decrement_stock(product_id UUID, qty INTEGER)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE products
+  SET stock = stock - qty
+  WHERE id = product_id AND stock >= qty;
+END;
+$$;
 
 -- 7. DEFAULT HOMEPAGE PROJECTS
 INSERT INTO homepage_projects (name, location, type, units, price_range, status, sort_order)

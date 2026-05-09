@@ -102,12 +102,12 @@ CREATE TABLE IF NOT EXISTS products (
     delivery_partner TEXT,
     description TEXT,
     dimensions TEXT,
-    active BOOLEAN DEFAULT true,
+    is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Anyone can view active products" ON products;
-CREATE POLICY "Anyone can view active products" ON products FOR SELECT USING (active = true);
+CREATE POLICY "Anyone can view active products" ON products FOR SELECT USING (is_active = true);
 DROP POLICY IF EXISTS "Admins can view all products" ON products;
 CREATE POLICY "Admins can view all products" ON products FOR SELECT USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role = 'admin'));
 DROP POLICY IF EXISTS "Admins manage products" ON products;

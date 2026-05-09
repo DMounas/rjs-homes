@@ -306,26 +306,11 @@
         <div class="admin-tab-pane" id="tab-projects">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px">
             <h1 style="font-family:var(--font-display);font-size:32px;margin:0">Homepage Projects</h1>
-            <button class="btn-gold-shop" onclick="alert('Feature coming soon: Requires Supabase table setup')">+ Add Project</button>
+            <button class="btn-gold-shop" onclick="openProjectModal()">+ Add Project</button>
           </div>
           <div class="data-table-wrap" style="background:var(--bg-card);border:1px solid var(--glass-border);border-radius:8px;padding:24px;">
             <p style="color:var(--text-secondary);margin-bottom:16px;">This section controls the "Featured Projects" section on the main website homepage. You can manage project details, images, and display order here.</p>
-            <div id="admin-projects-list" style="display:flex;flex-direction:column;gap:12px;">
-              <!-- Placeholder for dynamic projects -->
-              <div style="padding:16px;background:rgba(255,255,255,0.02);border:1px solid var(--glass-border);border-radius:6px;display:flex;justify-content:space-between;align-items:center;">
-                <div style="display:flex;align-items:center;gap:16px;">
-                  <div style="width:60px;height:40px;background:#333;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;">IMG</div>
-                  <div>
-                    <h4 style="margin:0;color:var(--gold)">Villa Areca</h4>
-                    <span style="font-size:12px;color:var(--text-secondary)">VILLA · Jubilee Hills</span>
-                  </div>
-                </div>
-                <button class="btn-outline-shop" style="padding:6px 12px;font-size:12px;" onclick="alert('Feature coming soon')">Edit</button>
-              </div>
-            </div>
-            <div style="margin-top:24px;padding:16px;background:rgba(212,160,23,0.1);border-left:3px solid var(--gold);color:var(--text-primary);font-size:13px;">
-              <strong>Backend Requirement:</strong> A new Supabase table <code>homepage_projects</code> must be created to fully activate this section.
-            </div>
+            <div id="admin-projects-list" style="display:flex;flex-direction:column;gap:12px;"></div>
           </div>
         </div>
 
@@ -333,13 +318,10 @@
         <div class="admin-tab-pane" id="tab-clients">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px">
             <h1 style="font-family:var(--font-display);font-size:32px;margin:0">Construction Clients</h1>
-            <button class="btn-gold-shop" onclick="alert('Feature coming soon')">+ New Client Portal</button>
+            <button class="btn-gold-shop" onclick="openClientModal()">+ New Client Portal</button>
           </div>
           <div class="data-table-wrap" style="background:var(--bg-card);border:1px solid var(--glass-border);border-radius:8px;padding:24px;">
             <p style="color:var(--text-secondary);margin-bottom:16px;">Manage active construction clients, update their project completion phases, and upload site photos to their portal.</p>
-            <div style="margin-top:24px;padding:16px;background:rgba(212,160,23,0.1);border-left:3px solid var(--gold);color:var(--text-primary);font-size:13px;">
-              <strong>Note:</strong> Client tracking is being migrated from the old index.html portal hack to this secure dashboard.
-            </div>
           </div>
         </div>
 
@@ -347,16 +329,94 @@
         <div class="admin-tab-pane" id="tab-users">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px">
             <h1 style="font-family:var(--font-display);font-size:32px;margin:0">Admin Access</h1>
-            <button class="btn-gold-shop" onclick="alert('Feature coming soon')">+ Invite Admin</button>
+            <button class="btn-gold-shop" onclick="openAdminModal()">+ Invite Admin</button>
           </div>
           <div class="data-table-wrap" style="background:var(--bg-card);border:1px solid var(--glass-border);border-radius:8px;padding:24px;">
             <p style="color:var(--text-secondary);margin-bottom:16px;">Manage which email addresses have access to this dashboard.</p>
-            <div style="margin-top:24px;padding:16px;background:rgba(212,160,23,0.1);border-left:3px solid var(--gold);color:var(--text-primary);font-size:13px;">
-              <strong>Backend Requirement:</strong> Requires extending the <code>profiles</code> table or adding an <code>admin_users</code> table with RLS policies in Supabase.
-            </div>
           </div>
-        </div>      </main>
+        </div>
+      </main>
     </div>
+  </div>
+
+  <!-- Generic Modal Overlay -->
+  <div class="add-product-overlay" id="generic-modal-overlay" onclick="closeGenericModals()"></div>
+
+  <!-- Homepage Project Modal -->
+  <div class="add-product-panel" id="modal-homepage-project">
+    <div class="panel-header">
+      <h2 id="hp-modal-title" style="font-family:var(--font-display);font-size:24px;margin:0">Add Homepage Project</h2>
+      <button onclick="closeGenericModals()" style="background:none;border:none;color:#fff;font-size:24px;cursor:pointer">✕</button>
+    </div>
+    <form id="form-homepage-project" onsubmit="saveHomepageProject(event)" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+      <input type="hidden" id="hp-id">
+      <div class="panel-body">
+        <div class="panel-grid">
+          <div class="panel-field full"><label>Project Name *</label><input type="text" id="hp-name" required></div>
+          <div class="panel-field full"><label>Location *</label><input type="text" id="hp-loc" required></div>
+          <div class="panel-field"><label>Type *</label><input type="text" id="hp-type" placeholder="e.g. Villa" required></div>
+          <div class="panel-field"><label>Units *</label><input type="text" id="hp-units" placeholder="e.g. 24 Units" required></div>
+          <div class="panel-field"><label>Price Range *</label><input type="text" id="hp-price" placeholder="e.g. ₹85L - ₹1.2 Cr" required></div>
+          <div class="panel-field"><label>Status *</label>
+            <select id="hp-status">
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="ONGOING">ONGOING</option>
+              <option value="NEW LAUNCH">NEW LAUNCH</option>
+              <option value="COMPLETED">COMPLETED</option>
+            </select>
+          </div>
+          <div class="panel-field full"><label>Image URL</label><input type="text" id="hp-img" placeholder="https://..."></div>
+        </div>
+      </div>
+      <div class="panel-footer" style="padding:20px 40px;background:#000;border-top:1px solid var(--glass-border);display:flex;justify-content:flex-end;gap:16px">
+        <button type="button" class="btn-outline-shop" onclick="closeGenericModals()">Cancel</button>
+        <button type="submit" class="btn-gold-shop">Save Project</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Client Portal Modal -->
+  <div class="add-product-panel" id="modal-client-portal">
+    <div class="panel-header">
+      <h2 style="font-family:var(--font-display);font-size:24px;margin:0">New Client Portal</h2>
+      <button onclick="closeGenericModals()" style="background:none;border:none;color:#fff;font-size:24px;cursor:pointer">✕</button>
+    </div>
+    <form id="form-client-portal" onsubmit="saveClientPortal(event)" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="panel-body">
+        <div class="panel-grid">
+          <div class="panel-field full"><label>Project Code / ID *</label><input type="text" id="cp-code" placeholder="e.g. RJS-2024" required></div>
+          <div class="panel-field full"><label>Client Name *</label><input type="text" id="cp-name" required></div>
+          <div class="panel-field full"><label>Project Title *</label><input type="text" id="cp-title" required></div>
+          <div class="panel-field full">
+            <p style="font-size:12px;color:var(--text-secondary)">Creating this project will automatically provision a portal accessible via <strong>[Project Code]@rjshomes.in</strong>.</p>
+          </div>
+        </div>
+      </div>
+      <div class="panel-footer" style="padding:20px 40px;background:#000;border-top:1px solid var(--glass-border);display:flex;justify-content:flex-end;gap:16px">
+        <button type="button" class="btn-outline-shop" onclick="closeGenericModals()">Cancel</button>
+        <button type="submit" class="btn-gold-shop">Create Portal</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Invite Admin Modal -->
+  <div class="add-product-panel" id="modal-invite-admin">
+    <div class="panel-header">
+      <h2 style="font-family:var(--font-display);font-size:24px;margin:0">Invite Administrator</h2>
+      <button onclick="closeGenericModals()" style="background:none;border:none;color:#fff;font-size:24px;cursor:pointer">✕</button>
+    </div>
+    <form id="form-invite-admin" onsubmit="saveAdminUser(event)" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="panel-body">
+        <div class="panel-grid">
+          <div class="panel-field full"><label>Email Address *</label><input type="email" id="adm-email" required></div>
+          <div class="panel-field full"><label>Full Name</label><input type="text" id="adm-name"></div>
+        </div>
+      </div>
+      <div class="panel-footer" style="padding:20px 40px;background:#000;border-top:1px solid var(--glass-border);display:flex;justify-content:flex-end;gap:16px">
+        <button type="button" class="btn-outline-shop" onclick="closeGenericModals()">Cancel</button>
+        <button type="submit" class="btn-gold-shop">Invite User</button>
+      </div>
+    </form>
   </div>
 
   <!-- Add Product Panel -->

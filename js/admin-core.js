@@ -148,8 +148,8 @@ async function loadWebsiteProjects() {
           </div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn-outline-shop" style="padding:6px 12px;font-size:12px;" onclick="alert('Edit functionality coming soon')">Edit</button>
-          <button class="btn-outline-shop" style="padding:6px 12px;font-size:12px;border-color:#ff4444;color:#ff4444;" onclick="alert('Delete functionality coming soon')">Delete</button>
+          <button class="btn-outline-shop" style="padding:6px 12px;font-size:12px;" onclick="openProjectModal('${p.id}')">Edit</button>
+          <button class="btn-outline-shop" style="padding:6px 12px;font-size:12px;border-color:#ff4444;color:#ff4444;" onclick="deleteHomepageProject('${p.id}')">Delete</button>
         </div>
       </div>
     `).join('');
@@ -189,7 +189,7 @@ async function loadConstructionClients() {
           <td style="padding:16px;color:var(--text-secondary)">${p.client_name || 'N/A'}</td>
           <td style="padding:16px;color:var(--gold)">${p.overall_progress}%</td>
           <td style="padding:16px;">
-            <button class="btn-outline-shop" style="padding:6px 12px;font-size:12px;" onclick="alert('Manage Portal coming soon')">Manage Portal</button>
+            <button class="btn-outline-shop" style="padding:6px 12px;font-size:12px;" onclick="deleteClientPortal('${p.id}')">Delete</button>
           </td>
         </tr>
       `).join('');
@@ -239,7 +239,7 @@ async function loadAdminUsers() {
           <td style="padding:16px;color:var(--text-secondary)">${u.email || 'N/A'}</td>
           <td style="padding:16px;"><span style="background:rgba(212,160,23,0.1);color:var(--gold);padding:4px 8px;border-radius:4px;font-size:11px;letter-spacing:1px;">ADMIN</span></td>
           <td style="padding:16px;">
-            <button class="btn-outline-shop" style="padding:6px 12px;font-size:12px;border-color:#ff4444;color:#ff4444;" onclick="alert('Revoke access coming soon')">Revoke</button>
+            <button class="btn-outline-shop" style="padding:6px 12px;font-size:12px;border-color:#ff4444;color:#ff4444;" onclick="revokeAdmin('${u.id}')">Revoke</button>
           </td>
         </tr>
       `).join('');
@@ -254,7 +254,173 @@ async function loadAdminUsers() {
   }
 }
 
+// ============================================
+// MODALS AND CRUD OPERATIONS
+// ============================================
+
+window.closeGenericModals = function() {
+  document.getElementById('generic-modal-overlay').classList.remove('show');
+  document.querySelectorAll('.add-product-panel').forEach(p => p.classList.remove('show'));
+}
+
+// 1. Homepage Projects
+window.openProjectModal = async function(id = null) {
+  document.getElementById('form-homepage-project').reset();
+  document.getElementById('hp-id').value = '';
+  document.getElementById('hp-modal-title').textContent = 'Add Homepage Project';
+
+  if (id) {
+    document.getElementById('hp-modal-title').textContent = 'Edit Project';
+    const { data } = await supabase.from('homepage_projects').select('*').eq('id', id).single();
+    if (data) {
+      document.getElementById('hp-id').value = data.id;
+      document.getElementById('hp-name').value = data.name;
+      document.getElementById('hp-loc').value = data.location;
+      document.getElementById('hp-type').value = data.type;
+      document.getElementById('hp-units').value = data.units;
+      document.getElementById('hp-price').value = data.price_range;
+      document.getElementById('hp-status').value = data.status;
+      document.getElementById('hp-img').value = data.image_url || '';
+    }
+  }
+
+  document.getElementById('generic-modal-overlay').classList.add('show');
+  document.getElementById('modal-homepage-project').classList.add('show');
+}
+
+window.saveHomepageProject = async function(e) {
+  e.preventDefault();
+  const id = document.getElementById('hp-id').value;
+  const project = {
+    name: document.getElementById('hp-name').value,
+    location: document.getElementById('hp-loc').value,
+    type: document.getElementById('hp-type').value,
+    units: document.getElementById('hp-units').value,
+    price_range: document.getElementById('hp-price').value,
+    status: document.getElementById('hp-status').value,
+    image_url: document.getElementById('hp-img').value || null
+  };
+
+  try {
+    if (id) {
+      await supabase.from('homepage_projects').update(project).eq('id', id);
+    } else {
+      await supabase.from('homepage_projects').insert(project);
+    }
+    closeGenericModals();
+    loadWebsiteProjects();
+  } catch (err) {
+    alert('Failed to save project.');
+    console.error(err);
+  }
+}
+
+window.deleteHomepageProject = async function(id) {
+  if (!confirm('Are you sure you want to delete this project?')) return;
+  try {
+    await supabase.from('homepage_projects').delete().eq('id', id);
+    loadWebsiteProjects();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// 2. Client Portals
+window.openClientModal = function() {
+  document.getElementById('form-client-portal').reset();
+  document.getElementById('generic-modal-overlay').classList.add('show');
+  document.getElementById('modal-client-portal').classList.add('show');
+}
+
+window.saveClientPortal = async function(e) {
+  e.preventDefault();
+  const code = document.getElementById('cp-code').value.toUpperCase();
+  const client_name = document.getElementById('cp-name').value;
+  const title = document.getElementById('cp-title').value;
+
+  try {
+    const { error } = await supabase.from('projects').insert({
+      code,
+      client_name,
+      title,
+      overall_progress: 0,
+      phases: [
+        { name: 'Foundation', progress: 0, status: 'pending' },
+        { name: 'Super Structure', progress: 0, status: 'pending' },
+        { name: 'Finishing', progress: 0, status: 'pending' }
+      ]
+    });
+    if (error) throw error;
+    closeGenericModals();
+    loadConstructionClients();
+    alert(`Portal Created! Client can now log in using ${code}@rjshomes.in`);
+  } catch (err) {
+    alert('Failed to create portal.');
+    console.error(err);
+  }
+}
+
+window.deleteClientPortal = async function(id) {
+  if (!confirm('WARNING: Are you sure you want to delete this client portal and all associated data?')) return;
+  try {
+    await supabase.from('projects').delete().eq('id', id);
+    loadConstructionClients();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// 3. Admin Users
+window.openAdminModal = function() {
+  document.getElementById('form-invite-admin').reset();
+  document.getElementById('generic-modal-overlay').classList.add('show');
+  document.getElementById('modal-invite-admin').classList.add('show');
+}
+
+window.saveAdminUser = async function(e) {
+  e.preventDefault();
+  const email = document.getElementById('adm-email').value;
+  const full_name = document.getElementById('adm-name').value;
+
+  try {
+    // Basic insert into profiles (Assuming a cloud edge function or manual setup triggers real auth signup)
+    // For demo purposes we insert into profiles
+    await supabase.from('profiles').insert({
+      id: crypto.randomUUID(),
+      email,
+      full_name,
+      role: 'admin'
+    });
+    closeGenericModals();
+    loadAdminUsers();
+    alert('Admin user added to database.');
+  } catch (err) {
+    alert('Failed to invite admin.');
+    console.error(err);
+  }
+}
+
+window.revokeAdmin = async function(id) {
+  if (!confirm('Are you sure you want to revoke admin access for this user?')) return;
+  try {
+    await supabase.from('profiles').update({ role: 'client' }).eq('id', id);
+    loadAdminUsers();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
 // Expose to window
 window.handleAdminLogin = handleAdminLogin;
 window.handleAdminLogout = handleAdminLogout;
 window.switchAdminTab = switchAdminTab;
+window.openProjectModal = openProjectModal;
+window.saveHomepageProject = saveHomepageProject;
+window.deleteHomepageProject = deleteHomepageProject;
+window.openClientModal = openClientModal;
+window.saveClientPortal = saveClientPortal;
+window.deleteClientPortal = deleteClientPortal;
+window.openAdminModal = openAdminModal;
+window.saveAdminUser = saveAdminUser;
+window.revokeAdmin = revokeAdmin;
+window.closeGenericModals = closeGenericModals;

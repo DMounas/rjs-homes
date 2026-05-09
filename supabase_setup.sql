@@ -78,7 +78,7 @@ ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Admins manage projects" ON projects;
 CREATE POLICY "Admins manage projects" ON projects FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role = 'admin'));
 DROP POLICY IF EXISTS "Clients view own projects" ON projects;
-CREATE POLICY "Clients view own projects" ON projects FOR SELECT USING (auth.uid() = client_id);
+CREATE POLICY "Clients view own projects" ON projects FOR SELECT USING (auth.uid() = client_id OR LOWER(project_code) || '@rjshomes.in' = LOWER(auth.jwt()->>'email'));
 
 -- 4. CONSTRUCTION PHASES
 CREATE TABLE IF NOT EXISTS phases (
@@ -94,7 +94,7 @@ ALTER TABLE phases ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Admins manage phases" ON phases;
 CREATE POLICY "Admins manage phases" ON phases FOR ALL USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role = 'admin'));
 DROP POLICY IF EXISTS "Clients view own project phases" ON phases;
-CREATE POLICY "Clients view own project phases" ON phases FOR SELECT USING (EXISTS (SELECT 1 FROM projects WHERE projects.id = phases.project_id AND projects.client_id = auth.uid()));
+CREATE POLICY "Clients view own project phases" ON phases FOR SELECT USING (EXISTS (SELECT 1 FROM projects WHERE projects.id = phases.project_id AND (projects.client_id = auth.uid() OR LOWER(projects.project_code) || '@rjshomes.in' = LOWER(auth.jwt()->>'email'))));
 
 -- 5. PRODUCTS (Shop)
 CREATE TABLE IF NOT EXISTS products (

@@ -73,6 +73,10 @@ export async function getCurrentProfile() {
 export async function getMyProject() {
     const user = await getCurrentUser()
     if (!user) return null
+    
+    // We match by project_code = email prefix
+    const code = user.email.split('@')[0].toUpperCase()
+
     const { data, error } = await supabase
         .from('projects')
         .select(`
@@ -82,7 +86,7 @@ export async function getMyProject() {
       project_photos (*),
       materials (*)
     `)
-        .eq('client_id', user.id)
+        .eq('project_code', code)
         .single()
     if (error) throw error
     return data

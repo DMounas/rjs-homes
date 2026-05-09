@@ -46,9 +46,9 @@ DROP POLICY IF EXISTS "Admins can delete homepage projects" ON homepage_projects
 -- 3. CONSTRUCTION CLIENT PROJECTS
 CREATE TABLE IF NOT EXISTS projects (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    code TEXT NOT NULL UNIQUE,
+    project_code TEXT NOT NULL UNIQUE,
     client_name TEXT NOT NULL,
-    title TEXT NOT NULL,
+    project_name TEXT NOT NULL,
     overall_progress INTEGER DEFAULT 0,
     client_id UUID REFERENCES profiles(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
@@ -57,14 +57,14 @@ CREATE TABLE IF NOT EXISTS projects (
 -- In case projects table existed without client_name or title:
 DO $$ 
 BEGIN 
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='projects' AND column_name='code') THEN 
-    ALTER TABLE projects ADD COLUMN code TEXT UNIQUE; 
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='projects' AND column_name='project_code') THEN 
+    ALTER TABLE projects ADD COLUMN project_code TEXT UNIQUE; 
   END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='projects' AND column_name='client_name') THEN 
     ALTER TABLE projects ADD COLUMN client_name TEXT DEFAULT ''; 
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='projects' AND column_name='title') THEN 
-    ALTER TABLE projects ADD COLUMN title TEXT DEFAULT ''; 
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='projects' AND column_name='project_name') THEN 
+    ALTER TABLE projects ADD COLUMN project_name TEXT DEFAULT ''; 
   END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='projects' AND column_name='overall_progress') THEN 
     ALTER TABLE projects ADD COLUMN overall_progress INTEGER DEFAULT 0; 

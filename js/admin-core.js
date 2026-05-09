@@ -185,7 +185,7 @@ async function loadConstructionClients() {
     } else {
       html += data.map(p => `
         <tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
-          <td style="padding:16px;font-weight:600;color:#fff">${p.code}</td>
+          <td style="padding:16px;font-weight:600;color:#fff">${p.project_code}</td>
           <td style="padding:16px;color:var(--text-secondary)">${p.client_name || 'N/A'}</td>
           <td style="padding:16px;color:var(--gold)">${p.overall_progress}%</td>
           <td style="padding:16px;">
@@ -340,9 +340,9 @@ window.saveClientPortal = async function(e) {
 
   try {
     const projectData = {
-      code,
+      project_code: code,
       client_name,
-      title,
+      project_name: title,
       overall_progress: 0
     };
     await createProject(projectData);

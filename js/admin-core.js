@@ -350,7 +350,7 @@ window.saveClientPortal = async function(e) {
     loadConstructionClients();
     alert(`Portal Created! Client can now log in using ${code}@rjshomes.in`);
   } catch (err) {
-    alert('Failed to create portal.');
+    alert('Failed to create portal: ' + (err.message || JSON.stringify(err)));
     console.error(err);
   }
 }
